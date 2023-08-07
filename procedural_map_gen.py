@@ -1,6 +1,7 @@
 import numpy as np
 import pygame
 import time
+from landparcel import LandParcel
 
 # Set colors 
 WALL_COLOR = (50, 50, 50)
@@ -13,7 +14,7 @@ WIDTH = 1600
 HEIGHT = 900
 
 
-def update(screen, cells, size, with_progress=False):
+def procedural_update(screen, cells, size, with_progress=False):
     # Create temporary matrix of zeros
     temp = np.zeros((cells.shape[0], cells.shape[1]))
 
@@ -34,12 +35,6 @@ def update(screen, cells, size, with_progress=False):
         # Draw rectangles, using as background the screen value.
         pygame.draw.rect(screen, color, (col * size, row * size, size - 1, size - 1))
 
-        # Set borders to walls
-    temp[0:int(HEIGHT / CELL_SIZE), 0] = 1
-    temp[0, 0:int(WIDTH / CELL_SIZE)] = 1
-    temp[0:int(HEIGHT / CELL_SIZE), int(WIDTH / CELL_SIZE) - 1] = 1
-    temp[int(HEIGHT / CELL_SIZE) - 1, 0:int(WIDTH / CELL_SIZE)] = 1
-
     return temp
 
 
@@ -52,11 +47,7 @@ def main():
     pygame.init()
 
     # Set dimension of cells and their initial configuration
-    cells = np.random.choice(2, size=(int(HEIGHT / CELL_SIZE), int(WIDTH / CELL_SIZE)), p=[0.38, 0.62])
-    cells[0:int(HEIGHT / CELL_SIZE), 0] = 1
-    cells[0, 0:int(WIDTH / CELL_SIZE)] = 1
-    cells[0:int(HEIGHT / CELL_SIZE), int(WIDTH / CELL_SIZE) - 1] = 1
-    cells[int(HEIGHT / CELL_SIZE) - 1, 0:int(WIDTH / CELL_SIZE)] = 1
+    cells = np.random.choice(2, size=(int(HEIGHT / CELL_SIZE), int(WIDTH / CELL_SIZE)), p=[0.55, 0.45])
 
     # Init surface/screen
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -64,13 +55,14 @@ def main():
     # Fill the screen with the grid
     screen.fill(GRID_COLOR)
 
-    update(screen, cells, CELL_SIZE)
+    procedural_update(screen, cells, CELL_SIZE)
 
     # Update the full screen
     pygame.display.flip()
 
-    # Initialize running as false, so it won't immediately start the game
-    running = False
+    # Initialize running_procedural and running_model as false, so it won't immediately start the game
+    running_procedural = False
+    running_model = False
 
     # Create infinite while loop to listen to keys 
     while True:
@@ -79,13 +71,16 @@ def main():
                 pygame.quit()
             # If space key is pressed, change running in true/false
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    running = not running
-                    update(screen, cells, CELL_SIZE)
+                if event.key == pygame.K_SPACE and not running_model:
+                    running_procedural = not running_procedural
+                    procedural_update(screen, cells, CELL_SIZE)
                     pygame.display.update()
-
-        if running:
-            cells = update(screen, cells, CELL_SIZE, with_progress=True)
+                elif event.key == pygame.K_s:
+                    running_model = True
+                    initialize_world(screen, cells, CELL_SIZE)
+                    pygame.display.update()
+        if running_procedural and not running_model:
+            cells = procedural_update(screen, cells, CELL_SIZE, with_progress=True)
             pygame.display.update()
         time.sleep(.5)
 
